@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connected Dots Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box; /* Memastikan padding dan border dihitung dalam lebar dan tinggi elemen */
+        }
+
+        /* Menghilangkan scroll vertikal dan horizontal */
+        html, body {
+            overflow: hidden; /* Menghilangkan scroll */
+            height: 100%; /* Memastikan body mengambil tinggi penuh */
+        }
+        canvas {
+            background: #232323;
+            display: block; /* Menghilangkan spasi di bawah canvas */
+        }
+        /* Gaya untuk popup */
+        .popup {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #000;
+            padding: 10px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="popup" class="popup"></div>
+
+    <script type="text/javascript">
+        var canvas = document.getElementById("canvas"),
+            ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        var stars = [], // Array that contains the stars
+            FPS = 100, // Frames per second
+            x = 100, // Number of stars
+            mouse = {
+                x: 0,
+                y: 0
+            };  // mouse location
+
+        // Push stars to array
+        for (var i = 0; i < x; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 1 + 5,
+                vx: Math.floor(Math.random() * 50) - 25,
+                vy: Math.floor(Math.random() * 50) - 25,
+                info: `Star ${i + 1} - Google` // Informasi untuk setiap bintang
+            });
+        }
+
+        // Draw the scene
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = "lighter";
+
+            for (var i = 0, x = stars.length; i < x; i++) {
+                var s = stars[i];
+                ctx.fillStyle = "#fff";
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.radius, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillStyle = 'black';
+                ctx.stroke();
+            }
+
+            ctx.beginPath();
+            for (var i = 0, x = stars.length; i < x; i++) {
+                var starI = stars[i];
+                ctx.moveTo(starI.x, starI.y);
+                if (distance(mouse, starI) < 150) ctx.lineTo(mouse.x, mouse.y);
+                for (var j = 0, x = stars.length; j < x; j++) {
+                    var starII = stars[j];
+                    if (distance(starI, starII) < 150) {
+                        ctx.lineTo(starII.x, starII.y);
+                    }
+                }
+            }
+            ctx.lineWidth = 0.15;
+            ctx.strokeStyle = 'white';
+            ctx.stroke();
+        }
+
+        function distance(point1, point2) {
+            var xs = point2.x - point1.x;
+            var ys = point2.y - point1.y;
+            return Math.sqrt(xs * xs + ys * ys);
+        }
+
+        // Update star locations
+        function update() {
+            for (var i = 0, x = stars.length; i < x; i++) {
+                var s = stars[i];
+                s.x += s.vx / FPS;
+                s.y += s.vy / FPS;
+
+                if (s.x < 0 || s.x > canvas.width) s.vx = -s.vx;
+                if (s.y < 0 || s.y > canvas.height) s.vy = -s.vy;
+            }
+        }
+
+        // Event listener untuk mousemove
+        canvas.addEventListener('mousemove', function(e) {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // Event listener untuk klik pada canvas
+        canvas.addEventListener('click', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Cek apakah klik berada di dalam salah satu bintang
+            for (var i = 0; i < stars.length; i++) {
+                var star = stars[i];
+                if (distance({ x: mouseX, y: mouseY }, star) < star.radius) {
+                    showPopup(e.clientX, e.clientY, star.info);
+                    return;
+                }
+            }
+            // Sembunyikan popup jika klik di luar bintang
+            document.getElementById('popup').style.display = 'none';
+        });
+
+        // Fungsi untuk menampilkan popup
+        function showPopup(x, y, info) {
+            const popup = document.getElementById('popup');
+            popup.style.left = `${x}px`;
+            popup.style.top = `${y}px`;
+            popup.innerText = info;
+            popup.style.display = 'block';
+        }
+
+        // Update and draw
+        function tick() {
+            draw();
+            update();
+            requestAnimationFrame(tick);
+        }
+
+        tick();
+    </script>
+</body>
+</html>
